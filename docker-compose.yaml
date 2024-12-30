@@ -1,16 +1,27 @@
-version: '3'
+version: "3"
 
 services:
-  goapp: 
+  wallet-app:
     build: .
+    container_name: wallet
     platform: linux/amd64
     volumes:
-      - .:/app
+      - ./wallet:/app
     ports:
       - 8080:8080
 
-  mysql:
+  balances-app:
+    build: .
+    container_name: balances
+    platform: linux/amd64
+    volumes:
+      - ./balances:/app
+    ports:
+      - 3003:3003
+
+  wallet-mysql:
     image: mysql:5.7
+    container_name: wallet-mysql
     platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -18,12 +29,26 @@ services:
       MYSQL_PASSWORD: root
     ports:
       - 3306:3306
-    volumes:
-      - .docker/mysql:/var/lib/mysql
+    # volumes:
+    #   - .docker/mysql:/var/lib/mysql
+
+  balances-mysql:
+    image: mysql:5.7
+    container_name: balances-mysql
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: balances
+      MYSQL_PASSWORD: root
+    ports:
+      - 3307:3306
+    # volumes:
+    #   - .docker/mysql:/var/lib/mysql
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"
     container_name: zookeeper
+    platform: linux/amd64
     ports:
       - 2181:2181
     environment:
@@ -37,10 +62,10 @@ services:
     depends_on:
       - zookeeper
     ports:
-    # Exposes 9092 for external connections to the broker
-    # Use kafka:29092 for connections internal on the docker network
-    # See https://rmoff.net/2018/08/02/kafka-listeners-explained/ for details
-      - '9092:9092'
+      # Exposes 9092 for external connections to the broker
+      # Use kafka:29092 for connections internal on the docker network
+      # See https://rmoff.net/2018/08/02/kafka-listeners-explained/ for details
+      - "9092:9092"
     environment:
       TZ: Sao_Paulo/Brazil
       KAFKA_BROKER_ID: 1
@@ -53,7 +78,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
-      CONFLUENT_METRICS_ENABLE: 'false'
+      CONFLUENT_METRICS_ENABLE: "false"
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.3.0
@@ -64,10 +89,9 @@ services:
     ports:
       - "9021:9021"
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'kafka:29092'
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: "kafka:29092"
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
-  
